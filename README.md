@@ -1,0 +1,60 @@
+# ai-agent-demo-frontend
+
+A React UI for [`ai-agent-demo-python`](../ai-agent-demo-python) that shows what the agent did to answer each message: which tools it called, with what arguments, every retry attempt, what each tool returned, and where the time went.
+
+## Run it
+
+Start the backend first (see its README for the one-time database setup):
+
+```
+cd ../ai-agent-demo-python
+docker compose up -d
+source .venv/bin/activate
+uvicorn agent_service.main:app --reload
+```
+
+Then, here:
+
+```
+npm install
+npm run dev
+```
+
+and open the URL Vite prints. The backend's `.env` needs a working `ANTHROPIC_API_KEY`; without one every message fails with an HTTP 500.
+
+## How it talks to the backend
+
+The browser only talks to the Vite dev server.
+
+- **`/api/*`** is proxied to the backend on `localhost:8000` (set `AGENT_SERVICE_URL` to point elsewhere), so the backend needs no CORS setup.
+- **`/storefront/token`** is answered by `dev-storefront.ts`, a Vite plugin that stands in for the storefront. The backend doesn't log customers in. It verifies a JWT the storefront signs with a shared secret. The plugin signs one for the customer picked in the sidebar, using `JWT_SECRET` from this project's `.env` or, if there isn't one, from `../ai-agent-demo-python/.env`. The secret stays in Node and never reaches the browser.
+
+Because of that plugin this is a development tool: `npm run build` produces a static bundle with nobody to mint its tokens.
+
+`POST /chat` returns the answer and the run's trace entries, one per tool-call attempt. `src/trace.ts` groups attempts by `tool_call_id` back into the calls the model made. There is no streaming, so a run appears all at once when the loop finishes, and no conversation history, so each message is an independent run.
+
+## Things to try
+
+The chips above the message box fill in a prompt for each of these.
+
+- **Someone else's order**: the reply is the same "not found" as for an order that doesn't exist.
+- **Store policy**: ask as `cust-1001`, then as `cust-3003`. The two stores' return policies differ, and search only sees the signed-in store's articles.
+- **Chained tools**: an order lookup followed by a notification. The order service fails 40% of the time on purpose, so retries show up often.
+- **Prompt injection**: claiming to be another customer changes nothing, because identity comes from the token.
+- **Allowed tools**: untick a tool and the model never sees its schema.
+
+## Layout
+
+```
+dev-storefront.ts        Vite plugin that mints customer JWTs
+src/
+  api.ts                 fetch calls and the response types
+  trace.ts               groups trace entries into tool calls
+  personas.ts            the seeded customers, stores and example prompts
+  App.tsx                state: who is signed in, allowed tools, the list of runs
+  components/
+    Sidebar.tsx          identity, token claims, tool allowlist, backend health
+    RunCard.tsx          one request: the timeline, final answer and timings
+    ToolCall.tsx         one tool call: arguments, attempts, result
+    Composer.tsx         message box and example prompts
+```
