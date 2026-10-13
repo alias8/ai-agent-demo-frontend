@@ -1,10 +1,10 @@
 # ai-agent-demo-frontend
 
-A React UI for [`ai-agent-demo-python`](../ai-agent-demo-python) that shows what the agent did to answer each message: which tools it called, with what arguments, every retry attempt, what each tool returned, and where the time went.
+A React UI for the Python agent backend at https://github.com/alias8/python_ai_agent that shows what the agent did to answer each message: which tools it called, with what arguments, every retry attempt, what each tool returned, and where the time went.
 
 ## Run it
 
-Start the backend first (see its README for the one-time database setup):
+Start the backend first (see its README for the one-time database setup). The commands below assume it is cloned next to this repo as `ai-agent-demo-python`:
 
 ```
 cd ../ai-agent-demo-python
