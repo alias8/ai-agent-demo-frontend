@@ -1,5 +1,5 @@
 import type { Claims } from '../api.ts'
-import { PERSONAS, TOOLS } from '../personas.ts'
+import { PERSONAS, TOOL_SCOPES } from '../personas.ts'
 import type { Persona } from '../personas.ts'
 
 interface Props {
@@ -7,8 +7,6 @@ interface Props {
   onPersonaChange: (persona: Persona) => void
   claims: Claims | null
   tokenError: string | null
-  enabledTools: ReadonlySet<string>
-  onToggleTool: (tool: string) => void
   backendUp: boolean | null
   /** True while a run is in flight. */
   locked: boolean
@@ -49,12 +47,12 @@ export function Sidebar(props: Props) {
               onClick={() => props.onPersonaChange(option)}
               disabled={props.locked}
             >
-              <strong>{option.customerId}</strong>
+              <strong>{option.label}</strong>
               <span>{option.storeName}</span>
             </button>
           ))}
         </div>
-        <p className="muted small">Orders: {persona.orders.join(', ')}</p>
+        <p className="muted small">Orders: {persona.orders.length ? persona.orders.join(', ') : 'none'}</p>
       </section>
 
       <section>
@@ -67,6 +65,8 @@ export function Sidebar(props: Props) {
             <dd>{claims.sub}</dd>
             <dt>store_id</dt>
             <dd>{claims.store_id}</dd>
+            <dt>scope</dt>
+            <dd>{claims.scope}</dd>
             <dt>aud</dt>
             <dd>{claims.aud}</dd>
             <dt>exp</dt>
@@ -76,28 +76,29 @@ export function Sidebar(props: Props) {
           <p className="muted small">Fetching token…</p>
         )}
         <p className="muted small">
-          The customer and store reach the agent only through this JWT. Nothing typed in the message can change them.
+          The customer, store and scopes reach the agent only through this JWT. Nothing typed in the message can change them.
         </p>
       </section>
 
       <section>
-        <h2>Allowed tools</h2>
-        {TOOLS.map((tool) => (
-          <label key={tool} className="tool-toggle">
-            <input
-              type="checkbox"
-              checked={props.enabledTools.has(tool)}
-              onChange={() => props.onToggleTool(tool)}
-              disabled={props.locked}
-            />
-            <span>
-              <code>{tool}</code>
-              <span className="muted small">{TOOL_NOTES[tool]}</span>
-            </span>
-          </label>
-        ))}
+        <h2>Tools this token grants</h2>
+        {Object.entries(TOOL_SCOPES).map(([tool, scope]) => {
+          const granted = claims?.scope.split(' ').includes(scope) ?? false
+          return (
+            <div key={tool} className={`tool-grant ${granted ? '' : 'denied'}`}>
+              <span className="grant-mark">{granted ? '✓' : '✕'}</span>
+              <span>
+                <code>{tool}</code>
+                <span className="muted small">
+                  needs <code>{scope}</code>. {TOOL_NOTES[tool]}
+                </span>
+              </span>
+            </div>
+          )
+        })}
         <p className="muted small">
-          Unchecked tools are left out of <code>allowed_tools</code>, so the model never sees their schema.
+          The backend gives the agent only the tools the token's scopes grant, so the model never sees the others'
+          schemas. The browser can't change this: the scopes are signed into the token.
         </p>
       </section>
     </aside>

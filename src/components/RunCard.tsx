@@ -35,11 +35,7 @@ export function RunCard({ run }: { run: Run }) {
           <span className="chip">
             {run.persona.customerId} @ {run.persona.storeId}
           </span>
-          {run.allowedTools && (
-            <span className="chip chip-warn">
-              allowed_tools: {run.allowedTools.length ? run.allowedTools.join(', ') : 'none'}
-            </span>
-          )}
+          <span className="chip">scope: {run.persona.scopes.join(' ')}</span>
         </div>
         <p className="user-message">{run.message}</p>
       </header>

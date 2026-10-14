@@ -223,20 +223,30 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
-.tool-toggle {
+.tool-grant {
   display: flex;
   align-items: flex-start;
   gap: 8px;
   margin-bottom: 8px;
 }
 
-.tool-toggle input {
-  margin-top: 4px;
-}
-
-.tool-toggle > span {
+.tool-grant > span:last-child {
   display: flex;
   flex-direction: column;
+}
+
+.grant-mark {
+  width: 14px;
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.tool-grant.denied {
+  opacity: 0.55;
+}
+
+.tool-grant.denied .grant-mark {
+  color: var(--fail);
 }
 
 /* Run card */

@@ -4,15 +4,13 @@ import type { ChatResponse } from './api.ts'
 import { Composer } from './components/Composer.tsx'
 import { RunCard } from './components/RunCard.tsx'
 import { Sidebar } from './components/Sidebar.tsx'
-import { PERSONAS, TOOLS } from './personas.ts'
+import { PERSONAS } from './personas.ts'
 import type { Persona } from './personas.ts'
 
 export interface Run {
   id: number
   message: string
   persona: Persona
-  /** null means no restriction was sent. */
-  allowedTools: string[] | null
   startedAt: number
   status: 'pending' | 'done' | 'error'
   elapsedMs?: number
@@ -30,7 +28,6 @@ export function App() {
   const [persona, setPersona] = useState<Persona>(PERSONAS[0]!)
   const [token, setToken] = useState<string | null>(null)
   const [tokenError, setTokenError] = useState<string | null>(null)
-  const [enabledTools, setEnabledTools] = useState<ReadonlySet<string>>(new Set(TOOLS))
   const [runs, setRuns] = useState<Run[]>([])
   const [backendUp, setBackendUp] = useState<boolean | null>(null)
   const nextId = useRef(1)
@@ -65,9 +62,8 @@ export function App() {
   const send = useCallback(
     async (message: string) => {
       const id = nextId.current++
-      const allowedTools = enabledTools.size === TOOLS.length ? null : TOOLS.filter((t) => enabledTools.has(t))
       const startedAt = performance.now()
-      setRuns((all) => [...all, { id, message, persona, allowedTools, startedAt, status: 'pending' }])
+      setRuns((all) => [...all, { id, message, persona, startedAt, status: 'pending' }])
       const finish = (result: Partial<Run>) =>
         setRuns((all) =>
           all.map((run) => (run.id === id ? { ...run, ...result, elapsedMs: performance.now() - startedAt } : run)),
@@ -78,7 +74,7 @@ export function App() {
           current = await fetchToken(persona)
           setToken(current)
         }
-        finish({ status: 'done', response: await chat(current, message, allowedTools) })
+        finish({ status: 'done', response: await chat(current, message) })
       } catch (error) {
         finish({
           status: 'error',
@@ -89,15 +85,8 @@ export function App() {
         })
       }
     },
-    [enabledTools, persona, token],
+    [persona, token],
   )
-
-  const toggleTool = (tool: string) =>
-    setEnabledTools((current) => {
-      const next = new Set(current)
-      if (!next.delete(tool)) next.add(tool)
-      return next
-    })
 
   return (
     <div className="layout">
@@ -106,8 +95,6 @@ export function App() {
         onPersonaChange={setPersona}
         claims={token ? decodeClaims(token) : null}
         tokenError={tokenError}
-        enabledTools={enabledTools}
-        onToggleTool={toggleTool}
         backendUp={backendUp}
         locked={pending}
       />

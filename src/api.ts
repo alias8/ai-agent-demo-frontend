@@ -39,6 +39,8 @@ export interface ChatResponse {
 export interface Claims {
   sub: string
   store_id: string
+  /** Space-separated, e.g. "orders:read kb:read". Decides which tools the agent gets. */
+  scope: string
   aud: string
   iat: number
   exp: number
@@ -76,17 +78,12 @@ export function decodeClaims(token: string): Claims {
   return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
 }
 
-export async function chat(
-  token: string,
-  message: string,
-  allowedTools: string[] | null,
-  signal?: AbortSignal,
-): Promise<ChatResponse> {
+export async function chat(token: string, message: string, signal?: AbortSignal): Promise<ChatResponse> {
   const response = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    // Only the message and the allowlist: who is asking travels in the token.
-    body: JSON.stringify(allowedTools ? { message, allowed_tools: allowedTools } : { message }),
+    // Only the message: who is asking, and which tools the agent may use, travel in the token.
+    body: JSON.stringify({ message }),
     signal,
   })
   if (!response.ok) throw new ApiError(response.status, await detailOf(response))

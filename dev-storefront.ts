@@ -15,6 +15,7 @@ import { resolve } from 'node:path'
 import type { Plugin } from 'vite'
 import { loadEnv } from 'vite'
 import { PERSONAS } from './src/personas.ts'
+import type { Persona } from './src/personas.ts'
 
 const AUDIENCE = 'agent-service' // the backend's default jwt_audience
 const TTL_SECONDS = 30 * 60
@@ -30,10 +31,18 @@ function readSecret(mode: string): string | undefined {
   return line?.trim().slice('JWT_SECRET='.length).replace(/^(['"])(.*)\1$/, '$2') || undefined
 }
 
-function mintToken(secret: string, customerId: string, storeId: string): string {
+function mintToken(secret: string, { customerId, storeId, scopes }: Persona): string {
   const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url')
   const now = Math.floor(Date.now() / 1000)
-  const claims = { sub: customerId, store_id: storeId, aud: AUDIENCE, iat: now, exp: now + TTL_SECONDS }
+  const claims = {
+    sub: customerId,
+    store_id: storeId,
+    // Space-separated, the OAuth convention. The backend gives the agent only the tools these grant.
+    scope: scopes.join(' '),
+    aud: AUDIENCE,
+    iat: now,
+    exp: now + TTL_SECONDS,
+  }
   const unsigned = `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode(claims)}`
   const signature = createHmac('sha256', secret).update(unsigned).digest('base64url')
   return `${unsigned}.${signature}`
@@ -56,7 +65,7 @@ export function devStorefront(): Plugin {
         detail: `No JWT_SECRET found. Set it in this project's .env, or in ${BACKEND_ENV}.`,
       })
     }
-    send(200, { token: mintToken(secret, persona.customerId, persona.storeId) })
+    send(200, { token: mintToken(secret, persona) })
   }
 
   return {

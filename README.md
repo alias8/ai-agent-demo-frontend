@@ -27,7 +27,7 @@ and open the URL Vite prints. The backend's `.env` needs a working `ANTHROPIC_AP
 The browser only talks to the Vite dev server.
 
 - **`/api/*`** is proxied to the backend on `localhost:8000` (set `AGENT_SERVICE_URL` to point elsewhere), so the backend needs no CORS setup.
-- **`/storefront/token`** is answered by `dev-storefront.ts`, a Vite plugin that stands in for the storefront. The backend doesn't log customers in. It verifies a JWT the storefront signs with a shared secret. The plugin signs one for the customer picked in the sidebar, using `JWT_SECRET` from this project's `.env` or, if there isn't one, from `../ai-agent-demo-python/.env`. The secret stays in Node and never reaches the browser.
+- **`/storefront/token`** is answered by `dev-storefront.ts`, a Vite plugin that stands in for the storefront. The backend doesn't log customers in. It verifies a JWT the storefront signs with a shared secret. The plugin signs one for the customer picked in the sidebar, including the scopes that decide which tools the agent gets, using `JWT_SECRET` from this project's `.env` or, if there isn't one, from `../ai-agent-demo-python/.env`. The secret stays in Node and never reaches the browser.
 
 Because of that plugin this is a development tool: `npm run build` produces a static bundle with nobody to mint its tokens.
 
@@ -41,7 +41,7 @@ The chips above the message box fill in a prompt for each of these.
 - **Store policy**: ask as `cust-1001`, then as `cust-3003`. The two stores' return policies differ, and search only sees the signed-in store's articles.
 - **Chained tools**: an order lookup followed by a notification. The order service fails 40% of the time on purpose, so retries show up often.
 - **Prompt injection**: claiming to be another customer changes nothing, because identity comes from the token.
-- **Allowed tools**: untick a tool and the model never sees its schema.
+- **Guest**: the guest token carries only the `kb:read` scope, so the agent gets only knowledge-base search. Ask it about an order and it has no tool to look one up.
 
 ## Layout
 
@@ -50,10 +50,10 @@ dev-storefront.ts        Vite plugin that mints customer JWTs
 src/
   api.ts                 fetch calls and the response types
   trace.ts               groups trace entries into tool calls
-  personas.ts            the seeded customers, stores and example prompts
-  App.tsx                state: who is signed in, allowed tools, the list of runs
+  personas.ts            the seeded customers, their stores and scopes, example prompts
+  App.tsx                state: who is signed in, their token, the list of runs
   components/
-    Sidebar.tsx          identity, token claims, tool allowlist, backend health
+    Sidebar.tsx          identity, token claims, the tools the token grants, backend health
     RunCard.tsx          one request: the timeline, final answer and timings
     ToolCall.tsx         one tool call: arguments, attempts, result
     Composer.tsx         message box and example prompts

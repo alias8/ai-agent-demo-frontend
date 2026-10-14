@@ -4,33 +4,58 @@
 
 export interface Persona {
   customerId: string
+  label: string
   storeId: string
   storeName: string
   orders: string[]
+  /** What the storefront lets the agent do for this customer, put in the token's `scope` claim. */
+  scopes: string[]
 }
+
+const ALL_SCOPES = ['orders:read', 'kb:read', 'notifications:send']
 
 export const PERSONAS: Persona[] = [
   {
     customerId: 'cust-1001',
+    label: 'cust-1001',
     storeId: 'main-street-market',
     storeName: 'Main Street Market',
     orders: ['ORD-1001', 'ORD-1042'],
+    scopes: ALL_SCOPES,
   },
   {
     customerId: 'cust-2002',
+    label: 'cust-2002',
     storeId: 'main-street-market',
     storeName: 'Main Street Market',
     orders: ['ORD-2003'],
+    scopes: ALL_SCOPES,
   },
   {
     customerId: 'cust-3003',
+    label: 'cust-3003',
     storeId: 'pine-and-peak',
     storeName: 'Pine & Peak',
     orders: ['PNP-5001'],
+    scopes: ALL_SCOPES,
+  },
+  {
+    // Browsing without signing in: the storefront grants help-center search only.
+    customerId: 'guest-4004',
+    label: 'Guest (not signed in)',
+    storeId: 'main-street-market',
+    storeName: 'Main Street Market',
+    orders: [],
+    scopes: ['kb:read'],
   },
 ]
 
-export const TOOLS = ['lookup_order_status', 'search_knowledge_base', 'send_notification'] as const
+/** The scope that grants each tool. Mirrors TOOL_SCOPES in the backend's langchain/tools.py. */
+export const TOOL_SCOPES = {
+  lookup_order_status: 'orders:read',
+  search_knowledge_base: 'kb:read',
+  send_notification: 'notifications:send',
+} as const
 
 export interface Example {
   label: string
